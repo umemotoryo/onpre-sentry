@@ -1,0 +1,55 @@
+version: '3'
+services:
+  sentry:
+    image: sentry:8.22
+    restart: always
+    environment: &sentry_environment
+      SENTRY_SECRET_KEY: your_secret_key
+      SENTRY_REDIS_HOST: redis
+      SENTRY_POSTGRES_HOST: postgres
+      SENTRY_DB_USER: postgres
+      SENTRY_DB_NAME: postgres
+      SENTRY_DB_PASSWORD: ''
+      TZ: Asia/Tokyo
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - sentry-data:/var/lib/sentry/files
+    ports:
+      - 9000:9000
+  sentry_cron:
+    image: sentry:8.22
+    restart: always
+    command: run cron
+    environment:
+      <<: *sentry_environment
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - sentry-cron:/var/lib/sentry/files
+  sentry_worker:
+    image: sentry:8.22
+    restart: always
+    command: run worker
+    environment:
+      <<: *sentry_environment
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - sentry-worker:/var/lib/sentry/files
+  redis:
+    image: redis:alpine
+    restart: always
+  postgres:
+    image: postgres:9.5.6-alpine
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: always
+volumes:
+  sentry-data:
+  sentry-cron:
+  sentry-worker:
+  postgres-data:
